@@ -410,11 +410,12 @@ class MusicBrowser:
                     break
         self.play_song()
 
-    def play_song(self):
+    def play_song(self, bystop=True):
         try:
             full_url = requests.Request('GET', self.current_song.streamUrl).prepare().url
             if hasattr(self, 'player') and self.player:
-                self.player.stop()
+                if self.player.get_state() != vlc.State.Ended:
+                    self.player.stop()
             self.player = vlc.MediaPlayer(full_url)
             self.player.play()
             self.player.event_manager().event_attach(
@@ -427,11 +428,9 @@ class MusicBrowser:
             self.footer_left.set_text(f"❌ Erreur lecture VLC : {str(e)}")
 
     def on_song_end(self, event=None):
-        self.player.stop()
-        time.sleep(1)
         if self.current_song.next is not None:
             self.current_song = self.current_song.next
-            self.play_song()
+            self.loop.set_alarm_in(0.1, lambda loop, user_data: self.play_song())
 
     def on_song_prev(self, event=None):
         if self.current_song.prev is not None:

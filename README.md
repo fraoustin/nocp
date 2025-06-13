@@ -15,3 +15,20 @@ NOCP (Navidrome On Console Player) is a console audio player designed to be powe
 after just
 
 > nocp
+
+## addshorcut
+
+on ubuntu, create file ~/.local/share/applications/nocp.desktop
+
+```
+[Desktop Entry]
+Type=Application
+Name=Nocp
+Exec=gnome-terminal -- bash -c 'nocp; exec bash'
+Icon=utilities-terminal
+Terminal=false
+```
+
+and
+
+> chmod +x ~/.local/share/applications/nocp.desktop

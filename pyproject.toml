@@ -1,0 +1,26 @@
+[project]
+name = "nocp"
+version = "0.1.0"
+description = "Navidrome On Console Player"
+readme = "README.md"
+authors = [{ name="fraoustin", email="fraoustin@gmail.com" }]
+license = {text = "MIT"}
+requires-python = ">=3.7"
+dependencies = [
+    "python-vlc",
+    "urwid",
+    "click",
+    "requests"
+]
+
+[project.urls]
+Homepage = "https://github.com/fraoustin/nocp"
+Repository = "https://github.com/fraoustin/nocp"
+Issues = "https://github.com/fraoustin/nocp/issues"
+
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project.scripts]
+nocp = "nocp.__main__:main"

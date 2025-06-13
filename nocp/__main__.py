@@ -12,7 +12,7 @@ import time
 
 DEFAULT_CONFIG_PATH = os.path.join(os.getenv("APPDATA", os.path.expanduser("~")), ".nocp", "config.ini")
 
-__version__ = "0.0.1"
+__version__ = "0.1.0"
 
 
 def load_config(config_path):
@@ -179,7 +179,9 @@ class HelpOverlay(urwid.WidgetWrap):
             "Navigation : ↑ ↓",
             "Changer de panneau : tab",
             "Sélectionner : enter",
-            "Fermer cette aide : esc ou enter"
+            "Fermer cette aide : esc ou enter",
+            "",
+            f"version {__version__}",
         ]
         help_text = urwid.Text("\n".join(shortcuts), align='left')
         padded = urwid.Padding(help_text, left=2, right=2)

@@ -16,7 +16,7 @@ import locale
 
 DEFAULT_CONFIG_PATH = os.path.join(os.getenv("APPDATA", os.path.expanduser("~")), ".nocp", "config.ini")
 
-__version__ = "0.2.0"
+__version__ = "0.2.1"
 
 
 def load_config(config_path):
@@ -587,7 +587,8 @@ class MusicBrowser:
 def setup_gettext(lang):
     lang_code = lang.split("_")[0]
     try:
-        trans = gettext.translation("messages", localedir="locales", languages=[lang_code])
+        localedir = os.path.join(os.path.dirname(__file__), "locales")
+        trans = gettext.translation("messages", localedir=localedir, languages=[lang_code])
         trans.install()
     except FileNotFoundError:
         gettext.install("messages")

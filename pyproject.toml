@@ -1,6 +1,6 @@
 [project]
 name = "nocp"
-version = "0.2.0"
+version = "0.2.1"
 description = "Navidrome On Console Player"
 readme = "README.md"
 authors = [{ name="fraoustin", email="fraoustin@gmail.com" }]
@@ -24,9 +24,6 @@ build-backend = "setuptools.build_meta"
 
 [project.scripts]
 nocp = "nocp.__main__:main"
-
-[tool.setuptools.packages.find]
-exclude = ["locales", "locales.*"]
 
 [tool.setuptools.package-data]
 nocp = ["locales/*/LC_MESSAGES/*.mo"]

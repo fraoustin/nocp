@@ -10,9 +10,13 @@ import click
 import os
 import time
 
+import gettext
+import locale
+
+
 DEFAULT_CONFIG_PATH = os.path.join(os.getenv("APPDATA", os.path.expanduser("~")), ".nocp", "config.ini")
 
-__version__ = "0.1.0"
+__version__ = "0.2.0"
 
 
 def load_config(config_path):
@@ -23,12 +27,13 @@ def load_config(config_path):
     return {}
 
 
-def save_config(username, password, server_url, config_path):
+def save_config(username, password, server_url, config_path, lang):
     config = configparser.ConfigParser()
     config['DEFAULT'] = {
         'username': username,
         'password': password,
-        'server_url': server_url
+        'server_url': server_url,
+        'lang': lang
     }
     config_dir = os.path.dirname(config_path)
     os.makedirs(config_dir, exist_ok=True)
@@ -166,26 +171,26 @@ class Navidrome:
 class HelpOverlay(urwid.WidgetWrap):
     def __init__(self, on_exit):
         shortcuts = [
-            "🎵 Musique : m",
-            "📻 Radio : r",
-            "📂 Playlists : l",
-            "🔊 Volume : v",
-            "❓ Aide : h",
-            "⏹ Quitter : q",
-            "pause/play : <space>",
-            "Suivant : n",
-            "Précedent : p",
+            "🎵 " + _("Music") + " : m",
+            "📻 " + _("Radio") + " : r",
+            "📂 " + _("Playlists") + " : l",
+            "🔊 " + _("Volume") + " : v",
+            "❓ " + _("Help") + " : h",
+            "⏹ " + _("Quit") + " : q",
+            _("pause/play") + " : <space>",
+            _("Next") + " : n",
+            _("Previous") + " : p",
             "",
-            "Navigation : ↑ ↓",
-            "Changer de panneau : tab",
-            "Sélectionner : enter",
-            "Fermer cette aide : esc ou enter",
+            _("Navigation") + " : ↑ ↓",
+            _("Change panel") + " : tab",
+            _("Select") + " : enter",
+            _("Quit this help") + " : esc",
             "",
-            f"version {__version__}",
+            _("version {__version__}").format(__version__=__version__),
         ]
         help_text = urwid.Text("\n".join(shortcuts), align='left')
         padded = urwid.Padding(help_text, left=2, right=2)
-        box = urwid.LineBox(urwid.Filler(padded, valign='top'), title="❓ Raccourcis clavier")
+        box = urwid.LineBox(urwid.Filler(padded, valign='top'), title="❓ " + _("Keyboard shortcut"))
         super().__init__(box)
         self.on_exit = on_exit
 
@@ -206,7 +211,7 @@ class VolumeGauge(urwid.WidgetWrap):
         self.on_exit = on_exit
         self.gauge = urwid.Text(self.render_gauge(), align='center')
         self.layout = urwid.Filler(self.gauge, valign='middle')
-        super().__init__(urwid.LineBox(self.layout, title="🔊 Volume"))
+        super().__init__(urwid.LineBox(self.layout, title="🔊 " + _("Volume")))
 
     def render_gauge(self):
         filled = int(self.value // 5)
@@ -284,21 +289,21 @@ class MusicBrowser:
 
         self.playlist_focus_list = [self.playlist_listbox, self.playlist_song_listbox]
 
-        self.footer_left = urwid.Text("🎵 Aucun morceau en cours", align='left')
+        self.footer_left = urwid.Text("🎵 " + _("No current songs"), align='left')
         self.footer_right = urwid.Text("00:00", align='right')
         self.footer_columns = urwid.Columns([self.footer_left, self.footer_right])
 
         self.focus_list = [self.artist_listbox, self.album_listbox, self.song_listbox]
 
-        self.left_panel = urwid.LineBox(self.artist_listbox, title="🎤 Artistes")
-        self.top_right = urwid.LineBox(self.album_listbox, title="💿 Albums")
-        self.bottom_right = urwid.LineBox(self.song_listbox, title="🎵 Chansons")
+        self.left_panel = urwid.LineBox(self.artist_listbox, title="🎤 " + _("Artists"))
+        self.top_right = urwid.LineBox(self.album_listbox, title="💿 " + _("Albums"))
+        self.bottom_right = urwid.LineBox(self.song_listbox, title="🎵 " + _("Songs"))
 
-        self.radio_panel = urwid.LineBox(self.radio_listbox, title="📻 Radios")
+        self.radio_panel = urwid.LineBox(self.radio_listbox, title="📻 " + _("Radios"))
 
         self.playlist_panel = urwid.Pile([
-            ('weight', 1, urwid.LineBox(self.playlist_listbox, title="📂 Playlists")),
-            ('weight', 1, urwid.LineBox(self.playlist_song_listbox, title="🎵 Morceaux"))
+            ('weight', 1, urwid.LineBox(self.playlist_listbox, title="📂 " + _("Playlists"))),
+            ('weight', 1, urwid.LineBox(self.playlist_song_listbox, title="🎵 " + _("Songs")))
         ])
 
         self.right_panel = urwid.Pile([
@@ -427,7 +432,7 @@ class MusicBrowser:
             self.update_footer_now_playing()
             self.loop.set_alarm_in(1, self.update_playback_time)
         except Exception as e:
-            self.footer_left.set_text(f"❌ Erreur lecture VLC : {str(e)}")
+            self.footer_left.set_text("❌ " + _("VLC playback error : {error}").format(error=str(e)))
 
     def on_song_end(self, event=None):
         if self.current_song.next is not None:
@@ -469,7 +474,7 @@ class MusicBrowser:
             self.update_footer_now_playing()
             self.loop.set_alarm_in(1, self.update_playback_time)
         except Exception as e:
-            self.footer_left.set_text(f"❌ Erreur lecture VLC : {str(e)}")
+            self.footer_left.set_text("❌ " + _("VLC playback error : {error}").format(error=str(e)))
 
     def on_playlist_selected(self, button, playlist):
         self.selected_playlist = playlist.name
@@ -579,13 +584,25 @@ class MusicBrowser:
         self.loop.run()
 
 
+def setup_gettext(lang):
+    lang_code = lang.split("_")[0]
+    try:
+        trans = gettext.translation("messages", localedir="locales", languages=[lang_code])
+        trans.install()
+    except FileNotFoundError:
+        gettext.install("messages")
+
+
 @click.command()
-@click.option('--server-url', help="URL du serveur")
-@click.option('--username', help="Nom d'utilisateur")
-@click.option('--password', hide_input=True, help="Mot de passe (ou vide pour demander)")
-@click.option('--config-path', default=DEFAULT_CONFIG_PATH, help="Chemin du fichier de configuration")
+@click.option('--server-url', help="URL of server")
+@click.option('--username', help="Login of user")
+@click.option('--password', hide_input=True, help="Password")
+@click.option('--config-path', default=DEFAULT_CONFIG_PATH, help="Path to the configuration file")
+@click.option('--lang', default=None, help="Lang")
 @click.pass_context
-def main(ctx, server_url, username, password, config_path):
+def main(ctx, server_url, username, password, config_path, lang):
+    lang = lang or locale.getlocale()[0] or "en_US"
+    setup_gettext(lang)
     config = load_config(config_path)
     server_url = server_url or config.get("server_url")
     username = username or config.get("username")
@@ -595,7 +612,7 @@ def main(ctx, server_url, username, password, config_path):
         click.echo(ctx.get_help())
         ctx.exit(1)
     else:
-        save_config(username, password, server_url, config_path)
+        save_config(username, password, server_url, config_path, lang)
 
     nav = Navidrome(server_url, username, "nocp", password, "1.16.1")
     app = MusicBrowser(nav)

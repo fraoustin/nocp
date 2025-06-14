@@ -1,0 +1,118 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: nocp\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2025-06-14 18:21+0200\n"
+"Last-Translator: Frederic AOUSTIN <fraoustin@gmail.com>\n"
+"Language: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#: nocp/__main__.py:172
+msgid "Music"
+msgstr "Musique"
+
+#: nocp/__main__.py:173
+msgid "Radio"
+msgstr "Radio"
+
+#: nocp/__main__.py:174 nocp/__main__.py:303
+msgid "Playlists"
+msgstr "Playlists"
+
+#: nocp/__main__.py:175 nocp/__main__.py:212
+msgid "Volume"
+msgstr "Volume"
+
+#: nocp/__main__.py:176
+msgid "Help"
+msgstr "Aide"
+
+#: nocp/__main__.py:177
+msgid "Quit"
+msgstr "Quitter"
+
+#: nocp/__main__.py:178
+msgid "pause/play"
+msgstr "pause/lecture"
+
+#: nocp/__main__.py:179
+msgid "Next"
+msgstr "Suivant"
+
+#: nocp/__main__.py:180
+msgid "Previous"
+msgstr "Précédent"
+
+#: nocp/__main__.py:182
+msgid "Navigation"
+msgstr "Navigation"
+
+#: nocp/__main__.py:183
+msgid "Change panel"
+msgstr "Changer de panneau"
+
+#: nocp/__main__.py:184
+msgid "Select"
+msgstr "Selectionner"
+
+#: nocp/__main__.py:185
+msgid "Quit this help"
+msgstr "Quitter cette aide"
+
+#: nocp/__main__.py:187
+#, python-brace-format
+msgid "version {__version__}"
+msgstr "version {__version__}"
+
+#: nocp/__main__.py:191
+msgid "Keyboard shortcut"
+msgstr "Raccourcit clavier"
+
+#: nocp/__main__.py:290
+msgid "No current songs"
+msgstr "Pas de musique en cours"
+
+#: nocp/__main__.py:296
+msgid "Artists"
+msgstr "Artistes"
+
+#: nocp/__main__.py:297
+msgid "Albums"
+msgstr "Albums"
+
+#: nocp/__main__.py:298 nocp/__main__.py:304
+msgid "Songs"
+msgstr "Musiques"
+
+#: nocp/__main__.py:300
+msgid "Radios"
+msgstr "Radios"
+
+#: nocp/__main__.py:433 nocp/__main__.py:475
+#, python-brace-format
+msgid "VLC playback error : {error}"
+msgstr "Erreur de lecture VLC : {error}"
+
+#: nocp/__main__.py:586
+msgid "URL of server"
+msgstr "Url du serveur"
+
+#: nocp/__main__.py:587
+msgid "Login of user"
+msgstr "Login de l'utilisateur"
+
+#: nocp/__main__.py:588
+msgid "Password"
+msgstr "Mot de passe"
+
+#: nocp/__main__.py:589
+msgid "Path to the configuration file"
+msgstr "Chemin du fichier de configuration"

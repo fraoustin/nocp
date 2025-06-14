@@ -1,6 +1,6 @@
 [project]
 name = "nocp"
-version = "0.1.0"
+version = "0.2.0"
 description = "Navidrome On Console Player"
 readme = "README.md"
 authors = [{ name="fraoustin", email="fraoustin@gmail.com" }]

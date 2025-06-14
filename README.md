@@ -13,7 +13,7 @@ NOCP (Navidrome On Console Player) is a console audio player designed to be powe
 
 > nocp --help
 
-> nocp --server-url http://myserver-navidrome/rest --username myusername --password mypassword
+> nocp --server-url http://myserver-navidrome/rest --username myusername --password mypassword --lang en_US
 
 after just
 

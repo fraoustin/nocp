@@ -16,7 +16,7 @@ import locale
 
 DEFAULT_CONFIG_PATH = os.path.join(os.getenv("APPDATA", os.path.expanduser("~")), ".nocp", "config.ini")
 
-__version__ = "0.2.1"
+__version__ = "0.2.2"
 
 
 def load_config(config_path):

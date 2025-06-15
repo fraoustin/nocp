@@ -1,0 +1,119 @@
+# Tradução portuguesa para o projeto nocp.
+# Copyright (C) 2025 THE PACKAGE'S COPYRIGHT HOLDER
+# Este arquivo é distribuído sob a mesma licença do pacote PACKAGE.
+# Tradutor: Seu Nome <EMAIL@ADDRESS>, 2025.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: nocp 1.0\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2025-06-14 18:21+0200\n"
+"PO-Revision-Date: 2025-06-15 12:00+0200\n"
+"Last-Translator: Seu Nome <EMAIL@ADDRESS>\n"
+"Language-Team: Português <LL@li.org>\n"
+"Language: pt\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#: nocp/__main__.py:172
+msgid "Music"
+msgstr "Música"
+
+#: nocp/__main__.py:173
+msgid "Radio"
+msgstr "Rádio"
+
+#: nocp/__main__.py:174 nocp/__main__.py:303
+msgid "Playlists"
+msgstr "Listas de reprodução"
+
+#: nocp/__main__.py:175 nocp/__main__.py:212
+msgid "Volume"
+msgstr "Volume"
+
+#: nocp/__main__.py:176
+msgid "Help"
+msgstr "Ajuda"
+
+#: nocp/__main__.py:177
+msgid "Quit"
+msgstr "Sair"
+
+#: nocp/__main__.py:178
+msgid "pause/play"
+msgstr "pausar/reproduzir"
+
+#: nocp/__main__.py:179
+msgid "Next"
+msgstr "Próxima"
+
+#: nocp/__main__.py:180
+msgid "Previous"
+msgstr "Anterior"
+
+#: nocp/__main__.py:182
+msgid "Navigation"
+msgstr "Navegação"
+
+#: nocp/__main__.py:183
+msgid "Change panel"
+msgstr "Alterar painel"
+
+#: nocp/__main__.py:184
+msgid "Select"
+msgstr "Selecionar"
+
+#: nocp/__main__.py:185
+msgid "Quit this help"
+msgstr "Sair da ajuda"
+
+#: nocp/__main__.py:187
+#, python-brace-format
+msgid "version {__version__}"
+msgstr "versão {__version__}"
+
+#: nocp/__main__.py:191
+msgid "Keyboard shortcut"
+msgstr "Atalho de teclado"
+
+#: nocp/__main__.py:290
+msgid "No current songs"
+msgstr "Nenhuma música em reprodução"
+
+#: nocp/__main__.py:296
+msgid "Artists"
+msgstr "Artistas"
+
+#: nocp/__main__.py:297
+msgid "Albums"
+msgstr "Álbuns"
+
+#: nocp/__main__.py:298 nocp/__main__.py:304
+msgid "Songs"
+msgstr "Músicas"
+
+#: nocp/__main__.py:300
+msgid "Radios"
+msgstr "Rádios"
+
+#: nocp/__main__.py:433 nocp/__main__.py:475
+#, python-brace-format
+msgid "VLC playback error : {error}"
+msgstr "Erro de reprodução do VLC: {error}"
+
+#: nocp/__main__.py:586
+msgid "URL of server"
+msgstr "URL do servidor"
+
+#: nocp/__main__.py:587
+msgid "Login of user"
+msgstr "Nome de usuário"
+
+#: nocp/__main__.py:588
+msgid "Password"
+msgstr "Senha"
+
+#: nocp/__main__.py:589
+msgid "Path to the configuration file"
+msgstr "Caminho para o arquivo de configuração"

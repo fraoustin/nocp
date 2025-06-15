@@ -2,6 +2,8 @@
 
 NOCP (Navidrome On Console Player) is a console audio player designed to be powerful and easy to use inpired bien MOCP (Music On Console Player).
 
+[Navidrome](https://www.navidrome.org/) is an open source web-based music collection server and streamer. It gives you freedom to listen to your music collection from any browser or mobile device. It's like your personal Spotify!
+
 ![custom-field](nocpglobal.png "Nocp")
 
 
@@ -37,6 +39,15 @@ You can access to
 You can listen to a song by selecting it and pressing "Enter"
 
 ![custom-field](nocpaction.png "help")
+
+List of available languages
+
+- English
+- French
+- German
+- Spanish
+- Italian
+- Portuguese
 
 
 ## addshorcut

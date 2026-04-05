@@ -16,7 +16,7 @@ import locale
 
 DEFAULT_CONFIG_PATH = os.path.join(os.getenv("APPDATA", os.path.expanduser("~")), ".nocp", "config.ini")
 
-__version__ = "0.2.3"
+__version__ = "0.2.4"
 
 
 def load_config(config_path):
@@ -426,7 +426,8 @@ class MusicBrowser:
             if hasattr(self, 'player') and self.player:
                 if self.player.get_state() != vlc.State.Ended:
                     self.player.stop()
-            self.player = vlc.MediaPlayer(full_url)
+            instance = vlc.Instance("--quiet", "--log-verbose=0")
+            self.player = instance.media_player_new(full_url)
             self.player.play()
             self.player.event_manager().event_attach(
                 vlc.EventType.MediaPlayerEndReached,
@@ -472,7 +473,8 @@ class MusicBrowser:
             full_url = requests.Request('GET', radio.streamUrl).prepare().url
             if hasattr(self, 'player') and self.player:
                 self.player.stop()
-            self.player = vlc.MediaPlayer(full_url)
+            instance = vlc.Instance("--quiet", "--log-verbose=0")
+            self.player = instance.media_player_new(full_url)
             self.player.play()
             self.update_footer_now_playing()
             self.loop.set_alarm_in(1, self.update_playback_time)

@@ -16,7 +16,7 @@ import locale
 
 DEFAULT_CONFIG_PATH = os.path.join(os.getenv("APPDATA", os.path.expanduser("~")), ".nocp", "config.ini")
 
-__version__ = "0.2.2"
+__version__ = "0.2.3"
 
 
 def load_config(config_path):
@@ -55,7 +55,10 @@ class Song(Generic):
 
     @property
     def timer(self):
-        return f"{self.duration // 60}:{self.duration % 60:02d}"
+        try:
+            return f"{self.duration // 60}:{self.duration % 60:02d}"
+        except Exception:
+            return ""
 
     @property
     def streamUrl(self):

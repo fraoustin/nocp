@@ -6,14 +6,11 @@ NOCP (Navidrome On Console Player) is a console audio player designed to be powe
 
 ![custom-field](nocpglobal.png "Nocp")
 
-
 ## install
 
 install by [pypi](https://pypi.org/project/nocp/)
 
 > pip install nocp
-
-
 
 ## usage
 
@@ -66,6 +63,17 @@ Terminal=false
 and
 
 > chmod +x ~/.local/share/applications/nocp.desktop
+
+## development
+
+Before propose your merge
+
+> flake8
+
+for push on pypi
+
+> python -m build
+> twine upload dist/*
 
 
 ## todo

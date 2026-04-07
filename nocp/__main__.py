@@ -9,14 +9,17 @@ import configparser
 import click
 import os
 import time
-
+import feedparser
+import json
 import gettext
 import locale
+from bs4 import BeautifulSoup
+import html
 
 
 DEFAULT_CONFIG_PATH = os.path.join(os.getenv("APPDATA", os.path.expanduser("~")), ".nocp", "config.ini")
 
-__version__ = "0.2.4"
+__version__ = "0.3.0"
 
 
 def load_config(config_path):
@@ -27,18 +30,30 @@ def load_config(config_path):
     return {}
 
 
-def save_config(username, password, server_url, config_path, lang):
+def save_config(username, password, server_url, config_path, lang, podcasts):
     config = configparser.ConfigParser()
     config['DEFAULT'] = {
         'username': username,
         'password': password,
         'server_url': server_url,
-        'lang': lang
+        'lang': lang,
+        'podcasts': podcasts
     }
     config_dir = os.path.dirname(config_path)
     os.makedirs(config_dir, exist_ok=True)
     with open(config_path, 'w') as configfile:
         config.write(configfile)
+
+
+def html_to_text(raw_html):
+    if not raw_html:
+        return ""
+    text = html.unescape(raw_html)
+    soup = BeautifulSoup(text, "html.parser")
+    text = soup.get_text(separator="\n")
+    lines = [line.strip() for line in text.splitlines()]
+    lines = [line for line in lines if line]
+    return "\n".join(lines)
 
 
 class Generic:
@@ -120,6 +135,33 @@ class Playlist(Generic):
         return songs
 
 
+class Podcast(Generic):
+    def __init__(self, name, url, mx=100, mxd=1000):
+        self.name = name
+        self.url = url
+        self.mx = mx
+        self.mxd = mxd
+
+    @property
+    def episodes(self):
+        feed = feedparser.parse(self.url)
+        episodes = []
+        for entry in feed.entries[:self.mx]:
+            episodes.append(PodcastEpisode(
+                title=entry.get("title", ""),
+                description=html_to_text(entry.get("summary", ""))[:self.mxd],
+                audio_url=entry.enclosures[0].href if entry.get("enclosures") else None
+            ))
+        return episodes
+
+
+class PodcastEpisode(Generic):
+    def __init__(self, title, description, audio_url):
+        self.title = title
+        self.description = description
+        self.audio_url = audio_url
+
+
 class Navidrome:
 
     def __init__(self, url, username, client, password, version):
@@ -177,6 +219,7 @@ class HelpOverlay(urwid.WidgetWrap):
             "🎵 " + _("Music") + " : m",
             "📻 " + _("Radio") + " : r",
             "📂 " + _("Playlists") + " : l",
+            "🎙 " + _("Podcasts") + " : o",
             "🔊 " + _("Volume") + " : v",
             "❓ " + _("Help") + " : h",
             "⏹ " + _("Quit") + " : q",
@@ -273,8 +316,9 @@ class PlainButton(urwid.WidgetWrap):
 
 
 class MusicBrowser:
-    def __init__(self, nav):
+    def __init__(self, nav, podcasts=[]):
         self.nav = nav
+        self.podcasts = podcasts
         self.mode = "music"
         self.selected_artist = None
         self.selected_album = None
@@ -317,6 +361,23 @@ class MusicBrowser:
         self.main_columns = urwid.Columns([
             ('weight', 1, self.left_panel),
             ('weight', 2, self.right_panel)
+        ])
+
+        self.podcast_listbox = urwid.ListBox(urwid.SimpleFocusListWalker([]))
+        self.episode_walker = urwid.SimpleFocusListWalker([])
+        self.episode_walker.set_focus_changed_callback(self.on_episode_focus_changed)
+        self.episode_listbox = urwid.ListBox(self.episode_walker)
+        self.episode_desc = urwid.Text("")
+        self.podcast_left = urwid.LineBox(self.podcast_listbox, title="🎙 Podcasts")
+
+        self.podcast_right = urwid.Pile([
+            ('weight', 1, urwid.LineBox(self.episode_listbox, title="📄 Episodes")),
+            ('weight', 1, urwid.LineBox(urwid.Filler(self.episode_desc, valign='top'), title="📝 Description"))
+        ])
+
+        self.podcast_view = urwid.Columns([
+            ('weight', 1, self.podcast_left),
+            ('weight', 2, self.podcast_right)
         ])
 
         self.main_layout = urwid.Frame(body=self.main_columns, footer=urwid.LineBox(self.footer_columns))
@@ -444,9 +505,12 @@ class MusicBrowser:
             self.loop.set_alarm_in(0.1, lambda loop, user_data: self.play_song())
 
     def on_song_prev(self, event=None):
-        if self.current_song.prev is not None:
-            self.current_song = self.current_song.prev
-            self.play_song()
+        try:
+            if self.current_song.prev is not None:
+                self.current_song = self.current_song.prev
+                self.play_song()
+        except Exception:
+            pass
 
     def update_footer_now_playing(self):
         if self.current_song:
@@ -500,6 +564,8 @@ class MusicBrowser:
                     self.move_focus(1)
                 elif self.mode == "playlist":
                     self.move_playlist_focus(1)
+                elif self.mode == "podcast":
+                    self.move_podcast_focus(1)
             elif key == 'enter':
                 self.trigger_selection()
             elif key.lower() == 'v':
@@ -516,6 +582,8 @@ class MusicBrowser:
                 self.on_song_end()
             elif key.lower() == 'p':
                 self.on_song_prev()
+            elif key.lower() == 'o':
+                self.switch_to_podcast_view()
             elif key == ' ':
                 if self.player:
                     state = self.player.get_state()
@@ -535,6 +603,14 @@ class MusicBrowser:
     def move_playlist_focus(self, step):
         self.playlist_focus_index = (self.playlist_focus_index + step) % 2
         self.playlist_panel.focus_position = self.playlist_focus_index
+
+    def move_podcast_focus(self, step):
+        self.focus_index = (self.focus_index + step) % 2
+        if self.focus_index == 0:
+            self.podcast_view.focus_position = 0
+        else:
+            self.podcast_view.focus_position = 1
+            self.podcast_right.focus_position = 0
 
     def trigger_selection(self):
         if self.mode == "music":
@@ -588,6 +664,91 @@ class MusicBrowser:
     def run(self):
         self.loop.run()
 
+    def load_podcasts(self):
+        podcasts = [Podcast(**p) for p in self.podcasts]
+        self.podcast_listbox.body.clear()
+
+        for podcast in podcasts:
+            btn = PlainButton(
+                urwid.Text(podcast.name),
+                on_press=self.on_podcast_selected,
+                user_data=podcast
+            )
+            self.podcast_listbox.body.append(btn)
+
+        if podcasts:
+            self.on_podcast_selected(None, podcasts[0])
+
+    def on_podcast_selected(self, button, podcast):
+        self.selected_podcast = podcast
+        self.clear_selection(self.podcast_listbox)
+
+        for btn in self.podcast_listbox.body:
+            if btn.get_label() == podcast.name:
+                btn.set_selected(True)
+
+        episodes = podcast.episodes
+        self.update_episode_list(episodes)
+
+    def update_episode_list(self, episodes):
+        self.episode_walker.clear()
+
+        for ep in episodes:
+            btn = PlainButton(
+                urwid.Text(ep.title),
+                on_press=self.on_episode_selected,
+                user_data=ep
+            )
+            self.episode_walker.append(btn)
+
+        if len(self.episode_walker) > 0:
+            self.episode_walker.set_focus(0)
+            first_episode = self.episode_walker[0]._user_data
+            if first_episode:
+                self.episode_desc.set_text(first_episode.description)
+
+    def on_episode_selected(self, button, episode):
+        self.current_episode = episode
+
+        self.clear_selection(self.episode_listbox)
+        for btn in self.episode_listbox.body:
+            if btn.get_label() == episode.title:
+                btn.set_selected(True)
+
+        self.episode_desc.set_text(episode.description)
+
+        self.play_podcast_episode()
+
+    def on_episode_focus_changed(self, focus_position):
+        try:
+            widget = self.episode_walker[focus_position]
+            episode = widget._user_data
+
+            if episode:
+                self.episode_desc.set_text(episode.description)
+        except Exception:
+            pass
+
+    def play_podcast_episode(self):
+        try:
+            if hasattr(self, 'player') and self.player:
+                self.player.stop()
+
+            instance = vlc.Instance("--quiet", "--log-verbose=0")
+            self.player = instance.media_player_new(self.current_episode.audio_url)
+            self.player.play()
+
+            self.footer_left.set_text(f"🎙 {self.current_episode.title}")
+            self.loop.set_alarm_in(1, self.update_playback_time)
+
+        except Exception as e:
+            self.footer_left.set_text(f"❌ Podcast error: {e}")
+
+    def switch_to_podcast_view(self):
+        self.mode = "podcast"
+        self.main_layout.body = self.podcast_view
+        self.load_podcasts()
+
 
 def setup_gettext(lang):
     lang_code = lang.split("_")[0]
@@ -613,15 +774,15 @@ def main(ctx, server_url, username, password, config_path, lang):
     server_url = server_url or config.get("server_url")
     username = username or config.get("username")
     password = password or config.get("password")
-
+    podcasts = config.get("podcasts", "[]")
     if not password or not username or not server_url:
         click.echo(ctx.get_help())
         ctx.exit(1)
     else:
-        save_config(username, password, server_url, config_path, lang)
+        save_config(username, password, server_url, config_path, lang, podcasts)
 
     nav = Navidrome(server_url, username, "nocp", password, "1.16.1")
-    app = MusicBrowser(nav)
+    app = MusicBrowser(nav, json.loads(podcasts))
     app.run()
 
 

@@ -27,6 +27,7 @@ You can access to three views
 - listing song (shorcut **m**)
 - listing radio (shorcut **r**)
 - listing playlist (shorcut **l**)
+- listing podcasts (shortcut **o**)
 
 You can access to
 
@@ -45,6 +46,15 @@ List of available languages
 - Spanish
 - Italian
 - Portuguese
+
+For add podcasts it's necessary to add in .nocp/config.ini value in *podcasts* parameter
+
+```
+podcasts = [
+        {"name": "Rdv Tech", "url": "https://feedpress.me/rdvtech"},
+        {"name": "Affaires Sensibles", "url": "https://radiofrance-podcast.net/podcast09/podcast_0b91efaf-26e6-11e4-907f-782bcb6744eb.xml"}
+    ]
+```
 
 
 ## addshorcut

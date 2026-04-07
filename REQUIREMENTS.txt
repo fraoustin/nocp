@@ -3,3 +3,5 @@ python-vlc
 urwid
 click
 flake8
+feedparser
+beautifulsoup4

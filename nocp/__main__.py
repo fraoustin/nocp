@@ -20,7 +20,7 @@ import threading
 
 DEFAULT_CONFIG_PATH = os.path.join(os.getenv("APPDATA", os.path.expanduser("~")), ".nocp", "config.ini")
 
-__version__ = "0.3.0"
+__version__ = "0.3.1"
 
 
 def load_config(config_path):

@@ -1,6 +1,6 @@
 [project]
 name = "nocp"
-version = "0.2.4"
+version = "0.3.1"
 description = "Navidrome On Console Player"
 readme = "README.md"
 authors = [{ name="fraoustin", email="fraoustin@gmail.com" }]
@@ -10,7 +10,9 @@ dependencies = [
     "python-vlc",
     "urwid",
     "click",
-    "requests"
+    "requests",
+    "feedparser",
+    "beautifulsoup4"
 ]
 
 [project.urls]
@@ -27,3 +29,6 @@ nocp = "nocp.__main__:main"
 
 [tool.setuptools.package-data]
 nocp = ["locales/*/LC_MESSAGES/*.mo"]
+
+[tool.setuptools.packages.find]
+include = ["nocp*"]

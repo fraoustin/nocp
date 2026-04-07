@@ -118,3 +118,17 @@ msgstr ""
 #: nocp/__main__.py:589
 msgid "Path to the configuration file"
 msgstr ""
+
+msgid "Podcasts"
+msgstr ""
+
+msgid "Episodes"
+msgstr ""
+
+msgid "Description"
+msgstr ""
+
+msgid "Loading podcasts..."
+msgstr ""
+
+

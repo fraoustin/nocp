@@ -15,6 +15,7 @@ import gettext
 import locale
 from bs4 import BeautifulSoup
 import html
+import threading
 
 
 DEFAULT_CONFIG_PATH = os.path.join(os.getenv("APPDATA", os.path.expanduser("~")), ".nocp", "config.ini")
@@ -136,31 +137,61 @@ class Playlist(Generic):
 
 
 class Podcast(Generic):
-    def __init__(self, name, url, mx=100, mxd=1000):
+    def __init__(self, name, url, mx=100, mxd=1000, **args):
         self.name = name
         self.url = url
         self.mx = mx
         self.mxd = mxd
+        self._episodes = None
 
     @property
     def episodes(self):
-        feed = feedparser.parse(self.url)
-        episodes = []
-        for entry in feed.entries[:self.mx]:
-            episodes.append(PodcastEpisode(
-                title=entry.get("title", ""),
-                description=html_to_text(entry.get("summary", ""))[:self.mxd],
-                audio_url=entry.enclosures[0].href if entry.get("enclosures") else None
-            ))
-        return episodes
+        if self._episodes is None:
+            feed = feedparser.parse(self.url)
+            self._episodes = []
+            for entry in feed.entries[:self.mx]:
+                duration = entry.get("itunes_duration")
+                if duration:
+                    parts = list(map(int, duration.split(":")))
+                    if len(parts) == 3:
+                        secs = parts[0]*3600 + parts[1]*60 + parts[2]
+                    elif len(parts) == 2:
+                        secs = parts[0]*60 + parts[1]
+                    else:
+                        secs = parts[0]
+                else:
+                    secs = None
+                self._episodes.append(PodcastEpisode(
+                    title=entry.get("title", ""),
+                    description=html_to_text(entry.get("summary", ""))[:self.mxd],
+                    audio_url=entry.enclosures[0].href if entry.get("enclosures") else None,
+                    duration=secs
+                ))
+            for i, episode in enumerate(self._episodes):
+                episode.next = self._episodes[i + 1] if i + 1 < len(self._episodes) else None
+                episode.prev = self._episodes[i - 1] if i - 1 >= 0 else None
+ 
+        return self._episodes
 
 
 class PodcastEpisode(Generic):
-    def __init__(self, title, description, audio_url):
+    def __init__(self, title, description, audio_url, duration=None):
         self.title = title
         self.description = description
         self.audio_url = audio_url
+        self.duration = duration
 
+    @property
+    def timer(self):
+        if self.duration is None:
+            return ""
+        minutes = self.duration // 60
+        seconds = self.duration % 60
+        return f"{minutes}:{seconds:02d}"
+    
+    @property
+    def streamUrl(self):
+        return self.audio_url
 
 class Navidrome:
 
@@ -368,11 +399,11 @@ class MusicBrowser:
         self.episode_walker.set_focus_changed_callback(self.on_episode_focus_changed)
         self.episode_listbox = urwid.ListBox(self.episode_walker)
         self.episode_desc = urwid.Text("")
-        self.podcast_left = urwid.LineBox(self.podcast_listbox, title="🎙 Podcasts")
+        self.podcast_left = urwid.LineBox(self.podcast_listbox, title="🎙 " + _("Podcasts"))
 
         self.podcast_right = urwid.Pile([
-            ('weight', 1, urwid.LineBox(self.episode_listbox, title="📄 Episodes")),
-            ('weight', 1, urwid.LineBox(urwid.Filler(self.episode_desc, valign='top'), title="📝 Description"))
+            ('weight', 1, urwid.LineBox(self.episode_listbox, title="📄 " + _("Episodes"))),
+            ('weight', 1, urwid.LineBox(urwid.Filler(self.episode_desc, valign='top'), title="📝 " + _("Description")))
         ])
 
         self.podcast_view = urwid.Columns([
@@ -394,7 +425,10 @@ class MusicBrowser:
         self.update_artist_list()
         self.update_radio_list()
         self.update_playlist_list()
-
+        self.podcast_listbox.body.append(urwid.Text(_("Loading podcasts...")))
+        self.pipe = self.loop.watch_pipe(self.on_pipe_event)
+        threading.Thread(target=self.load_podcasts_async, daemon=True).start()
+        
     def update_artist_list(self):
         artists = self.nav.artists
         self.artist_listbox.body.clear()
@@ -664,10 +698,18 @@ class MusicBrowser:
     def run(self):
         self.loop.run()
 
-    def load_podcasts(self):
-        podcasts = [Podcast(**p) for p in self.podcasts]
-        self.podcast_listbox.body.clear()
+    def on_pipe_event(self, data):
+        key = data.decode()
+        if key == "o":
+            self.handle_input("o")
+        return True
 
+    def load_podcasts_async(self):
+        podcasts = [Podcast(**p) for p in self.podcasts]
+        for podcast in podcasts:
+            podcast.episodes
+
+        self.podcast_listbox.body.clear()
         for podcast in podcasts:
             btn = PlainButton(
                 urwid.Text(podcast.name),
@@ -675,9 +717,7 @@ class MusicBrowser:
                 user_data=podcast
             )
             self.podcast_listbox.body.append(btn)
-
-        if podcasts:
-            self.on_podcast_selected(None, podcasts[0])
+        os.write(self.pipe, b"o")        
 
     def on_podcast_selected(self, button, podcast):
         self.selected_podcast = podcast
@@ -694,8 +734,12 @@ class MusicBrowser:
         self.episode_walker.clear()
 
         for ep in episodes:
-            btn = PlainButton(
+            row = urwid.Columns([
                 urwid.Text(ep.title),
+                urwid.Text(ep.timer, align='right')
+            ])
+            btn = PlainButton(
+                row,
                 on_press=self.on_episode_selected,
                 user_data=ep
             )
@@ -708,16 +752,13 @@ class MusicBrowser:
                 self.episode_desc.set_text(first_episode.description)
 
     def on_episode_selected(self, button, episode):
-        self.current_episode = episode
-
+        self.current_song = episode
         self.clear_selection(self.episode_listbox)
         for btn in self.episode_listbox.body:
             if btn.get_label() == episode.title:
                 btn.set_selected(True)
-
         self.episode_desc.set_text(episode.description)
-
-        self.play_podcast_episode()
+        self.play_song()
 
     def on_episode_focus_changed(self, focus_position):
         try:
@@ -729,25 +770,9 @@ class MusicBrowser:
         except Exception:
             pass
 
-    def play_podcast_episode(self):
-        try:
-            if hasattr(self, 'player') and self.player:
-                self.player.stop()
-
-            instance = vlc.Instance("--quiet", "--log-verbose=0")
-            self.player = instance.media_player_new(self.current_episode.audio_url)
-            self.player.play()
-
-            self.footer_left.set_text(f"🎙 {self.current_episode.title}")
-            self.loop.set_alarm_in(1, self.update_playback_time)
-
-        except Exception as e:
-            self.footer_left.set_text(f"❌ Podcast error: {e}")
-
     def switch_to_podcast_view(self):
         self.mode = "podcast"
         self.main_layout.body = self.podcast_view
-        self.load_podcasts()
 
 
 def setup_gettext(lang):

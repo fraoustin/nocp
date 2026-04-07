@@ -1,2 +1,3 @@
 [flake8]
 ignore = E501,E226,E128,F401,F811,F821
+exclude = pyenv, venv, build, docs

@@ -131,3 +131,12 @@ msgid "Loading podcasts..."
 msgstr "Laden von podcasts..."
 
 
+msgid "Herunterladen"
+msgstr ""
+
+msgid "Herunterladen {filename} ist abgeschlossen"
+msgstr ""
+
+msgid "Herunterladen {filename} wird unterbrochen\n{err}"
+msgstr ""
+

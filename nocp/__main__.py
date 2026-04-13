@@ -16,11 +16,14 @@ import locale
 from bs4 import BeautifulSoup
 import html
 import threading
+from pathlib import Path
 
 
 DEFAULT_CONFIG_PATH = os.path.join(os.getenv("APPDATA", os.path.expanduser("~")), ".nocp", "config.ini")
+DEFAULT_DOWNLOAD_PATH = os.path.join(os.getenv("APPDATA", os.path.expanduser("~")), "Downloads")
 
-__version__ = "0.3.2"
+
+__version__ = "0.3.3"
 
 
 def load_config(config_path):
@@ -31,19 +34,24 @@ def load_config(config_path):
     return {}
 
 
-def save_config(username, password, server_url, config_path, lang, podcasts):
+def save_config(username, password, server_url, config_path, lang, podcasts, download_path):
     config = configparser.ConfigParser()
     config['DEFAULT'] = {
         'username': username,
         'password': password,
         'server_url': server_url,
         'lang': lang,
+        'download_path': download_path,
         'podcasts': podcasts
     }
     config_dir = os.path.dirname(config_path)
     os.makedirs(config_dir, exist_ok=True)
     with open(config_path, 'w') as configfile:
         config.write(configfile)
+
+
+def sanitize(name):
+    return "".join(c for c in name if c not in r'\/:*?"<>|').strip()
 
 
 def html_to_text(raw_html):
@@ -252,6 +260,7 @@ class HelpOverlay(urwid.WidgetWrap):
             "📂 " + _("Playlists") + " : l",
             "🎙 " + _("Podcasts") + " : o",
             "🔊 " + _("Volume") + " : v",
+            "⬇️ " + _("Download") + " : d",
             "❓ " + _("Help") + " : h",
             "⏹ " + _("Quit") + " : q",
             _("pause/play") + " : <space>",
@@ -347,9 +356,10 @@ class PlainButton(urwid.WidgetWrap):
 
 
 class MusicBrowser:
-    def __init__(self, nav, podcasts=[]):
+    def __init__(self, nav, download_path='.', podcasts=[]):
         self.nav = nav
         self.podcasts = podcasts
+        self.download_path = Path(download_path)
         self.mode = "music"
         self.selected_artist = None
         self.selected_album = None
@@ -618,6 +628,8 @@ class MusicBrowser:
                 self.on_song_prev()
             elif key.lower() == 'o':
                 self.switch_to_podcast_view()
+            elif key.lower() == 'd':
+                self.download_selected_item()
             elif key == ' ':
                 if self.player:
                     state = self.player.get_state()
@@ -698,10 +710,22 @@ class MusicBrowser:
     def run(self):
         self.loop.run()
 
-    def on_pipe_event(self, data):
+    def on_pipe_event2(self, data):
         key = data.decode()
         if key == "o":
             self.handle_input("o")
+        return True
+
+    def on_pipe_event(self, data):
+        msg = json.loads(data.decode())
+
+        if msg["type"] == "podcast":
+            if msg["key"] == "o":
+                self.handle_input("o")
+
+        elif msg["type"] == "download_result":
+            self.show_download_result(msg)
+
         return True
 
     def load_podcasts_async(self):
@@ -718,7 +742,10 @@ class MusicBrowser:
             )
             self.podcast_listbox.body.append(btn)
         if self.mode == "podcast":
-            os.write(self.pipe, b"o")
+            os.write(self.pipe, json.dumps({
+                "type": "podcast",
+                "key": "o"
+            }).encode())
 
     def on_podcast_selected(self, button, podcast):
         self.selected_podcast = podcast
@@ -775,6 +802,103 @@ class MusicBrowser:
         self.mode = "podcast"
         self.main_layout.body = self.podcast_view
 
+    def get_selected_item(self):
+        try:
+            if self.mode == "music":
+                listbox = self.focus_list[self.focus_index]
+            elif self.mode == "playlist":
+                listbox = self.playlist_focus_list[self.playlist_focus_index]
+            elif self.mode == "podcast":
+                listbox = self.episode_listbox
+            else:
+                return None
+
+            focus_widget = listbox.body.get_focus()[0]
+
+            if focus_widget is None:
+                return None
+
+            base = getattr(focus_widget, "base_widget", None)
+            if isinstance(base, PlainButton):
+                return base._user_data
+
+        except Exception:
+            pass
+        return None
+
+    def show_download_result(self, msg):
+        filename = msg.get("filename", "")
+        ok = msg.get("ok", False)
+        error = msg.get("error", "")
+
+        if ok:
+            text = "✅ " + _("Download {filename} is OK").format(filename=filename)
+        else:
+            text = "❌ " +  _("Download {filename} is KO\n{err}").format(filename=filename, err=str(error))
+
+        popup = urwid.LineBox(
+            urwid.Filler(urwid.Text(text, align="center")),
+            title=_("Download")
+        )
+
+        overlay = urwid.Overlay(
+            popup,
+            self.main_layout,
+            align='center',
+            width=50,
+            valign='middle',
+            height=7
+        )
+
+        self.loop.widget = overlay
+
+        def close(loop, user_data):
+            self.loop.widget = self.main_layout
+
+        if ok:
+            self.loop.set_alarm_in(2, close)
+        else:
+            self.loop.set_alarm_in(5, close)
+
+    def download_selected_item(self):
+        item = self.get_selected_item()
+        if not item:
+            return
+        url = getattr(item, "streamUrl", None)
+        if not url:
+            return
+        title = sanitize(getattr(item, "title", "audio"))
+        artist = sanitize(getattr(item, "artist", ""))
+        filename = f"{artist} - {title}.mp3" if artist else f"{title}.mp3"
+        self.download_path.mkdir(parents=True, exist_ok=True)
+        filepath = os.path.join(self.download_path, filename)
+
+        def download():
+            try:
+                if self.mode == "podcast":
+                    headers = {"User-Agent": "Mozilla/5.0"}
+                else:
+                    headers = None
+                with requests.get(url, stream=True, headers=headers) as r, open(filepath, 'wb') as out_file:
+                    for chunk in r.iter_content(chunk_size=8192):
+                        out_file.write(chunk)
+
+                os.write(self.pipe, json.dumps({
+                    "type": "download_result",
+                    "ok": True,
+                    "filename": filename
+                }).encode())
+
+            except Exception as e:
+                os.write(self.pipe, json.dumps({
+                    "type": "download_result",
+                    "ok": False,
+                    "filename": filename,
+                    "error": str(e)
+                }).encode())
+
+        threading.Thread(target=download, daemon=True).start()
+
 
 def setup_gettext(lang):
     lang_code = lang.split("_")[0]
@@ -791,9 +915,10 @@ def setup_gettext(lang):
 @click.option('--username', help="Login of user")
 @click.option('--password', hide_input=True, help="Password")
 @click.option('--config-path', default=DEFAULT_CONFIG_PATH, help="Path to the configuration file")
+@click.option('--download-path', help="Path to download file")
 @click.option('--lang', default=None, help="Lang")
 @click.pass_context
-def main(ctx, server_url, username, password, config_path, lang):
+def main(ctx, server_url, username, password, config_path, download_path, lang):
     lang = lang or locale.getlocale()[0] or "en_US"
     setup_gettext(lang)
     config = load_config(config_path)
@@ -801,14 +926,15 @@ def main(ctx, server_url, username, password, config_path, lang):
     username = username or config.get("username")
     password = password or config.get("password")
     podcasts = config.get("podcasts", "[]")
+    download_path = download_path or config.get("download_path", DEFAULT_DOWNLOAD_PATH)
     if not password or not username or not server_url:
         click.echo(ctx.get_help())
         ctx.exit(1)
     else:
-        save_config(username, password, server_url, config_path, lang, podcasts)
+        save_config(username, password, server_url, config_path, lang, podcasts, download_path)
 
     nav = Navidrome(server_url, username, "nocp", password, "1.16.1")
-    app = MusicBrowser(nav, json.loads(podcasts))
+    app = MusicBrowser(nav, podcasts=json.loads(podcasts), download_path=download_path)
     app.run()
 
 

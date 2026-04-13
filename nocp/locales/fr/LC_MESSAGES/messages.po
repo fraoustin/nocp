@@ -129,4 +129,11 @@ msgstr "Description"
 msgid "Loading podcasts..."
 msgstr "Chargement podcasts..."
 
+msgid "Download"
+msgstr "Téléchargement"
 
+msgid "Download {filename} is OK"
+msgstr "Téléchargement {filename} est terminé"
+
+msgid "Download {filename} is KO\n{err}"
+msgstr "Téléchargement {filename} est interrompu\n{err}"

@@ -20,7 +20,7 @@ import threading
 
 DEFAULT_CONFIG_PATH = os.path.join(os.getenv("APPDATA", os.path.expanduser("~")), ".nocp", "config.ini")
 
-__version__ = "0.3.1"
+__version__ = "0.3.2"
 
 
 def load_config(config_path):
@@ -170,7 +170,6 @@ class Podcast(Generic):
             for i, episode in enumerate(self._episodes):
                 episode.next = self._episodes[i + 1] if i + 1 < len(self._episodes) else None
                 episode.prev = self._episodes[i - 1] if i - 1 >= 0 else None
- 
         return self._episodes
 
 
@@ -188,10 +187,11 @@ class PodcastEpisode(Generic):
         minutes = self.duration // 60
         seconds = self.duration % 60
         return f"{minutes}:{seconds:02d}"
-    
+
     @property
     def streamUrl(self):
         return self.audio_url
+
 
 class Navidrome:
 
@@ -428,7 +428,7 @@ class MusicBrowser:
         self.podcast_listbox.body.append(urwid.Text(_("Loading podcasts...")))
         self.pipe = self.loop.watch_pipe(self.on_pipe_event)
         threading.Thread(target=self.load_podcasts_async, daemon=True).start()
-        
+
     def update_artist_list(self):
         artists = self.nav.artists
         self.artist_listbox.body.clear()
@@ -717,7 +717,8 @@ class MusicBrowser:
                 user_data=podcast
             )
             self.podcast_listbox.body.append(btn)
-        os.write(self.pipe, b"o")        
+        if self.mode == "podcast":
+            os.write(self.pipe, b"o")
 
     def on_podcast_selected(self, button, podcast):
         self.selected_podcast = podcast

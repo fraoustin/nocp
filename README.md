@@ -57,7 +57,7 @@ podcasts = [
 ```
 
 
-## addshorcut
+## add shorcut
 
 on ubuntu, create file ~/.local/share/applications/nocp.desktop
 
@@ -65,7 +65,7 @@ on ubuntu, create file ~/.local/share/applications/nocp.desktop
 [Desktop Entry]
 Type=Application
 Name=Nocp
-Exec=gnome-terminal -- bash -c 'nocp; exit;'
+Exec=gnome-terminal --title="Music" -- bash -c 'nocp; exit;'
 Icon=utilities-terminal
 Terminal=false
 ```
